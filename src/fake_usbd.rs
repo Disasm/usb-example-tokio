@@ -5,11 +5,37 @@ use usb_device::prelude::*;
 use usb_device::class_prelude::*;
 use usb_device::endpoint::EndpointAddress;
 
-pub struct FakeBus;
+struct EndpointAllocator {
+    next_free: u8,
+}
+
+impl EndpointAllocator {
+    fn new() -> Self {
+        Self {
+            next_free: 1,
+        }
+    }
+
+    fn allocate(&mut self, ep_dir: UsbDirection, ep_addr: Option<EndpointAddress>) -> EndpointAddress {
+        if let Some(addr) = ep_addr {
+            addr
+        } else {
+            let ep_index = self.next_free;
+            self.next_free += 1;
+            EndpointAddress::from_parts(ep_index as usize, ep_dir)
+        }
+    }
+}
+
+pub struct FakeBus {
+    ep_allocator: EndpointAllocator,
+}
 
 impl FakeBus {
     pub fn new() -> UsbBusAllocator<Self> {
-        let bus = FakeBus;
+        let bus = FakeBus {
+            ep_allocator: EndpointAllocator::new()
+        };
 
         UsbBusAllocator::new(bus)
     }
@@ -17,7 +43,7 @@ impl FakeBus {
 
 impl UsbBus for FakeBus {
     fn alloc_ep(&mut self, ep_dir: UsbDirection, ep_addr: Option<EndpointAddress>, ep_type: EndpointType, max_packet_size: u16, interval: u8) -> Result<EndpointAddress> {
-        unimplemented!()
+        Ok(self.ep_allocator.allocate(ep_dir, ep_addr))
     }
 
     fn enable(&mut self) {
@@ -52,6 +78,10 @@ impl UsbBus for FakeBus {
     }
 
     fn poll(&self) -> PollResult {
-        PollResult::None
+        PollResult::Data {
+            ep_out: 0,
+            ep_in_complete: 0,
+            ep_setup: 0
+        }
     }
 }
