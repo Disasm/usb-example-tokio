@@ -1,0 +1,11 @@
+[package]
+name = "usb-example-tokio"
+version = "0.1.0"
+authors = ["disasm"]
+edition = "2018"
+
+[dependencies]
+tokio = "0.1.22"
+usbd-serial = "0.1.0"
+usb-device = "0.2.2"
+tokio-stdin-stdout = "0.1.5"
